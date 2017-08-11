@@ -5,3 +5,5 @@ evaluate a situation and make smart choices. This Application is a 4IR game and 
 mostly using methods and arrays to set up the board/players and moves.
 Lessons learnt - More on UIStackViews, setting up columns, dimensional arrays, IBOutletCollections, enums, GameplayKit is covered and
 GKGameModelPlayer, GKGameModel, GKGameModelUpdate and GKMinmaxStrategist and A1 is covered.
+
+Methods covered for GamePlayKit - apply(), gameModelUpdates(), score()
