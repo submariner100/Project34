@@ -10,7 +10,7 @@ import UIKit
 import GameplayKit
 
 
-class Board: NSObject {
+class Board: NSObject, GKGameModel {
 	
 	static var width = 7
 	static var height = 6
@@ -18,6 +18,17 @@ class Board: NSObject {
 	var slots = [ChipColor]()
 	
 	var currentPlayer: Player
+	
+	var players: [GKGameModelPlayer]? {
+		return Player.allPlayers
+		
+	}
+	
+	var activePlayer: GKGameModelPlayer? {
+		return currentPlayer
+		
+	}
+	
 	
 	override init() {
 		
@@ -116,6 +127,62 @@ class Board: NSObject {
 		
 		return true
 	
+	}
+	
+	func copy(with zone: NSZone? = nil) -> Any {
+		let copy = Board()
+		copy.setGameModel(self)
+		return copy
+		
+	}
+	
+	func setGameModel(_ gameModel: GKGameModel) {
+		if let board = gameModel as? Board {
+			slots = board.slots
+			currentPlayer = board.currentPlayer
+		}
+	
+	}
+	
+	func gameModelUpdates(for player: GKGameModelPlayer) -> [GKGameModelUpdate]? {
+		if let playerObject = player as? Player {
+			if isWin(for: playerObject) || isWin(for: playerObject.opponent) {
+				return nil
+			}
+			
+			var moves = [Move]()
+			
+			for column in 0 ..< Board.width {
+				if canMove(in: column) {
+					moves.append(Move(column: column))
+					
+				}
+			}
+			
+			return moves
+		
+		}
+		
+		return nil
+	}
+	
+	func apply(_ gameModelUpdate: GKGameModelUpdate) {
+		if let move = gameModelUpdate as? Move {
+			add(chip: currentPlayer.chip, in: move.column)
+			currentPlayer = currentPlayer.opponent
+		}
+	}
+	
+	func score(for player: GKGameModelPlayer) -> Int {
+		if let playerObject = player as? Player {
+			if isWin(for: playerObject) {
+				return 1000
+			} else if isWin(for: playerObject.opponent) {
+				return -1000
+			}
+		}
+		
+		return 0
 	}
 
 }
