@@ -23,10 +23,17 @@ class ViewController: UIViewController {
 	
 	var placedChips = [[UIView]]()
 	var board: Board!
+	var strategist: GKMinmaxStrategist!
 	
 
 	override func viewDidLoad() {
 		super.viewDidLoad()
+		
+		strategist = GKMinmaxStrategist()
+		strategist.maxLookAheadDepth = 7
+		//strategist.randomSource = nil
+		strategist.randomSource = GKARC4RandomSource()
+		
 		
 		for _ in 0 ..< Board.width {
 			placedChips.append([UIView]())
@@ -36,9 +43,52 @@ class ViewController: UIViewController {
 		resetBoard()
 	}
 	
+	func columnForAIMove() -> Int? {
+		if let aiMove = strategist.bestMove(for: board.currentPlayer) as? Move {
+			return aiMove.column
+		}
+		
+		return nil
+	
+	}
+	
+	func makeAIMove(in column: Int) {
+		columnButtons.forEach { $0.isEnabled = true }
+		navigationItem.leftBarButtonItem = nil
+		if let row = board.nextEmptySlot(in: column) {
+			board.add(chip: board.currentPlayer.chip, in: column)
+			addChip(inColumn: column, row: row, color: board.currentPlayer.color)
+			continueGame()
+		}
+	}
+	
+	func startAIMove() {
+		columnButtons.forEach {$0.isEnabled = false}
+		
+		let spinner = UIActivityIndicatorView(activityIndicatorStyle: .gray)
+		spinner.startAnimating()
+		
+		navigationItem.leftBarButtonItem = UIBarButtonItem(customView: spinner)
+		
+		DispatchQueue.global().async { [unowned self] in
+			let strategistTime = CFAbsoluteTimeGetCurrent()
+			let column = self.columnForAIMove()!
+			let delta = CFAbsoluteTimeGetCurrent() - strategistTime
+			
+			let aiTimeCeiling = 1.0
+			let delay = min(aiTimeCeiling - delta, aiTimeCeiling)
+			
+			DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+				self.makeAIMove(in: column)
+				
+			}
+		}
+	}
+	
 	func resetBoard() {
 		
 		board = Board()
+		strategist.gameModel = board
 		updateUI()
 		
 		for i in 0 ..< placedChips.count {
@@ -90,6 +140,10 @@ class ViewController: UIViewController {
 	
 	func updateUI() {
 		title = "\(board.currentPlayer.name)'s Turn"
+		
+		if board.currentPlayer.chip == .black {
+			startAIMove()
+		}
 	}
 	
 	@IBAction func makeMove(_ sender: UIButton) {
